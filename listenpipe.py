@@ -10,24 +10,18 @@ class ListenPipe(QObject):
     def __init__(self, parent=None):
         super(ListenPipe, self).__init__(parent=parent)
 
-        self.tcpServer = QTcpServer(parent)
-        self.tcpClients = []
+        self.tcpServer = QTcpServer()
+        self.socketClients = []
 
         self.tcpServer.newConnection.connect(self.on_newconnection)
-
-    def __del__(self):
-        self.tcpServer.close()
-        for tcpClient in self.tcpClients:
-            tcpClient.close()
-            tcpClient.deleteLater()
 
     @pyqtSlot()
     def start_listen(self):
         print('start_listen:%s %s' % (appsetting.listen_ip, appsetting.listen_port))
         self.tcpServer.close()
-        for tcpClient in self.tcpClients:
-            tcpClient.close()
-            tcpClient.deleteLater()
+        for socketClient in self.socketClients:
+            socketClient.close()
+            socketClient.deleteLater()
 
         if appsetting.listen_enable != '0':
             self.tcpServer.listen(QHostAddress(appsetting.listen_ip), int(appsetting.listen_port))
@@ -37,19 +31,19 @@ class ListenPipe(QObject):
     @pyqtSlot()
     def on_newconnection(self):
         print('on_newconnection')
-        tcpClient = self.tcpServer.nextPendingConnection()
-        tcpClient.readyRead.connect(self.on_readyRead)
-        tcpClient.connected.connect(self.on_connected)
-        tcpClient.disconnected.connect(self.on_disconnected)
-        tcpClient.error.connect(self.on_error)
-        self.tcpClients.append(tcpClient)
-        print('self.tcpClients size=%d' % len(self.tcpClients))
+        socketClient = self.tcpServer.nextPendingConnection()
+        socketClient.readyRead.connect(self.on_readyRead)
+        socketClient.connected.connect(self.on_connected)
+        socketClient.disconnected.connect(self.on_disconnected)
+        socketClient.error.connect(self.on_error)
+        self.socketClients.append(socketClient)
+        print('self.socketClients size=%d' % len(self.socketClients))
 
     @pyqtSlot()
     def on_readyRead(self):
         print('on_readyRead')
-        tcpClient = self.sender()
-        data = tcpClient.readAll()
+        socketClient = self.sender()
+        data = socketClient.readAll()
         #print(data)
         self.sig_data_arrived.emit(data)
 
@@ -60,13 +54,13 @@ class ListenPipe(QObject):
     @pyqtSlot()
     def on_disconnected(self):
         print('on_disconnected')
-        tcpClient = self.sender()
-        self.tcpClients.remove(tcpClient)
-        tcpClient.deleteLater()
-        print('self.tcpClients size=%d' % len(self.tcpClients))
+        socketClient = self.sender()
+        self.socketClients.remove(socketClient)
+        socketClient.deleteLater()
+        print('self.socketClients size=%d' % len(self.socketClients))
 
     @pyqtSlot()
     def on_error(self):
-        tcpClient = self.sender()
-        print('%s on_error:%s' % (self.__class__.__name__, tcpClient.errorString()))
+        socketClient = self.sender()
+        print('%s on_error:%s' % (self.__class__.__name__, socketClient.errorString()))
 
