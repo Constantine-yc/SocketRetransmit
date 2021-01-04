@@ -8,6 +8,7 @@ from transpipe import TransPipe
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     data_arrived = pyqtSignal(QByteArray)
+    data_replied = pyqtSignal(QByteArray)
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent=parent)
@@ -36,17 +37,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.listenpipe = ListenPipe()
         self.listenpipe.sig_data_arrived.connect(self.on_data_arrived)
         self.listenpipe.sig_listening_state.connect(self.on_listening_state)
+        self.data_replied.connect(self.listenpipe.on_data_arrived)
         appsetting.sig_listen_changed.connect(self.listenpipe.start_listen)
 
         self.transpipes = {}
         self.transpipes[1] = TransPipe(1)
         self.data_arrived.connect(self.transpipes[1].on_data_arrived)
         self.transpipes[1].sig_Transing_state.connect(self.on_transing_state)
+        self.transpipes[1].sig_data_arrived.connect(self.on_data_replied)
         appsetting.sig_trans_changed.connect(self.transpipes[1].start_trans)
 
         self.transpipes[2] = TransPipe(2)
         self.data_arrived.connect(self.transpipes[2].on_data_arrived)
         self.transpipes[2].sig_Transing_state.connect(self.on_transing_state)
+        self.transpipes[2].sig_data_arrived.connect(self.on_data_replied)
         appsetting.sig_trans_changed.connect(self.transpipes[2].start_trans)
 
         appsetting.sig_listen_changed.emit()
@@ -114,6 +118,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_data_arrived(self, data):
         print("%s on_data_arrived" % self.__class__.__name__)
         self.data_arrived.emit(data)
+
+    @pyqtSlot(QByteArray)
+    def on_data_replied(self, data):
+        print("%s on_data_replied" % self.__class__.__name__)
+        self.data_replied.emit(data)
 
     @pyqtSlot(bool)
     def on_listening_state(self, listening):

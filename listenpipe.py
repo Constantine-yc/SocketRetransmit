@@ -41,11 +41,17 @@ class ListenPipe(QObject):
 
     @pyqtSlot()
     def on_readyRead(self):
-        print('on_readyRead')
+        print("%s on_readyRead" % self.__class__.__name__)
         socketClient = self.sender()
         data = socketClient.readAll()
         #print(data)
         self.sig_data_arrived.emit(data)
+
+    @pyqtSlot(QByteArray)
+    def on_data_arrived(self, data):
+        print("%s on_data_arrived" % self.__class__.__name__)
+        for socketClient in self.socketClients:
+            socketClient.write(data)
 
     @pyqtSlot()
     def on_connected(self):

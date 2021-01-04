@@ -4,6 +4,7 @@ from setting import appsetting
 
 
 class TransPipe(QObject):
+    sig_data_arrived = pyqtSignal(QByteArray)
     sig_Transing_state = pyqtSignal(int, bool)
 
     def __init__(self, pipe, parent=None):
@@ -19,6 +20,7 @@ class TransPipe(QObject):
         print('start_trans %d' % self.pipe)
 
         if self.SocketClient:
+            self.SocketClient.readyRead.disconnect(self.on_readyRead)
             self.SocketClient.connected.disconnect(self.on_connected)
             self.SocketClient.disconnected.disconnect(self.on_disconnected)
             self.SocketClient.error.disconnect(self.on_error)
@@ -31,6 +33,7 @@ class TransPipe(QObject):
         else:
             self.SocketClient = QUdpSocket()
 
+        self.SocketClient.readyRead.connect(self.on_readyRead)
         self.SocketClient.connected.connect(self.on_connected)
         self.SocketClient.disconnected.connect(self.on_disconnected)
         self.SocketClient.error.connect(self.on_error)
@@ -59,4 +62,11 @@ class TransPipe(QObject):
         print("%s on_data_arrived %d" % ( self.__class__.__name__, self.pipe))
         if self.SocketClient:
             self.SocketClient.write(data)
+
+    @pyqtSlot()
+    def on_readyRead(self):
+        print("%s on_readyRead %d" % (self.__class__.__name__, self.pipe))
+        if self.SocketClient:
+            data = self.SocketClient.readAll()
+            self.sig_data_arrived.emit(data)
 
